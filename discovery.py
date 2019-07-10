@@ -9,40 +9,106 @@ session.auth = (creds.login["username"], creds.login["password"])
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+def UnityCon(UnityArr):
+
+    sysinfo = {}    
+    basicu = GetUnityBasic(UnityArr)
+    portsu = GetUnityPorts(UnityArr)
+    poolsu = GetUnityPools(UnityArr)
+    swu = GetUnitySWInfo(UnityArr)
+    snu = GetUnitySNInfo(UnityArr)
+    syscapu = GetUnitySysCap(UnityArr)
+
+    base_dict = {}
+
+    #print(portsu)
+
+    base_dict.update(portsu)
+    base_dict.update(basicu)
+
+    print(base_dict)
+
+    # print(basicu)
+    # print(poolsu)
+    # print(portsu)
+
+    sysinfo['Basic'] = basicu
+    sysinfo['Network'] = portsu
+    sysinfo['Pools'] = poolsu
+    sysinfo['Software'] = swu
+    sysinfo['SN'] = snu
+    sysinfo['Capacity Info'] = syscapu
+    # print(basicu)
+    # labels = []
+    # for base in basicu:
+    #     for key in base.keys():
+    #         labels.append(key)
+        
+
+    # print(labels)
+    return
+
+
 def GetUnityBasic(UnityArr):
 
     basicinfo = session.get('https://' + UnityArr + '/api/types/basicSystemInfo/instances?fields=name,model,softwareVersion&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
     basicjson = basicinfo.json()
+    basic_dict = {}
     basiclst = []
     for info in basicjson['entries']:
         basiclst.append(info['content'])
 
-    return basiclst
+    for diction in basiclst:
+        basic_dict.update(diction)
+
+    basic_dict['sysname'] = basic_dict.pop('name')
+
+    return basic_dict
 
 def GetUnityPorts(UnityArr):
 
     portinfo = session.get('https://' + UnityArr + '/api/types/ipPort/instances?fields=name,macAddress,isLinkUp&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
     portjson = portinfo.json()
+    portjson.pop('id')
+    port_dict = {}
     portlst = []
     for port in portjson['entries']:
         portlst.append(port['content'])
+    
+    for diction in portlst:
+        print(diction)
+        port_dict.update(diction)
 
-    return portlst
+    port_dict['portname'] = port_dict.pop('name')
+    port_dict['System'] = UnityArr
 
+    print(port_dict)
 
+    return port_dict
+
+    
 def GetUnityPools(UnityArr):
     
-    poolinfo = session.get('https://' + UnityArr + '/api/types/pool/instances?fields=id,name,type,isAllFlash,health,sizeTotal,sizeUsed,sizeFree,dataReductionRatio&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
+    poolinfo = session.get('https://' + UnityArr + '/api/types/pool/instances?fields=name,type,isAllFlash,health,sizeTotal,sizeUsed,sizeFree,dataReductionRatio&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
     pooljson = poolinfo.json()
+    pool_dict = {}
     poollst = []
     for pool in pooljson['entries']:
         poollst.append(pool['content'])
 
-    return poollst
+    for diction in poollst:
+        pool_dict.update(diction)
+
+    pool_dict['poolname'] = pool_dict.pop('name')
+    pool_dict['System'] = UnityArr
+
+    print(pool_dict['System'])
+
+    return pool_dict
 
 def GetUnitySWInfo(UnityArr):
     
-    swinfo = session.get('https://' + UnityArr + '/api/types/installedSoftwareVersion/instances?fields=id,version,revision&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
+    swinfo = session.get('https://' + UnityArr + '/api/types/installedSoftwareVersion/instances?fields=version,revision&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
     swjson = swinfo.json()
     swinfolst =[]
     for sw in swjson['entries']:
@@ -78,13 +144,8 @@ sysinfo={}
 
 #print(pretty_sysinfo)
 
-unityip = ["10.237.196.48", "10.237.196.198"]
+unityip = ["10.237.196.48"]
 
 for ip in unityip:
     
-    print(GetUnityBasic(ip))
-    print(GetUnityPorts(ip))
-    print(GetUnityPools(ip))
-    print(GetUnitySWInfo(ip))
-    print(GetUnitySNInfo(ip))
-    print(GetUnitySysCap(ip))
+    UnityCon(ip)
