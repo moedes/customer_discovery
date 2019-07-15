@@ -4,31 +4,27 @@ import json
 import creds
 import pandas as pd
 import xlsxwriter
+import unity
+from storops import VNXSystem
 
 session = requests.Session()
-session.auth = (creds.login["username"], creds.login["password"])
+session.auth = (creds.unitylogin["username"], creds.unitylogin["password"])
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-def UnityCon(UnityArr, workbook):
+def SystemCon(SysArr, workbook):
 
     sysinfo = {}    
-    # basicu = GetUnityBasic(UnityArr)
-    # portsu = GetUnityPorts(UnityArr)
-    # poolsu = GetUnityPools(UnityArr)
-    # swu = GetUnitySWInfo(UnityArr)
-    # snu = GetUnitySNInfo(UnityArr)
-    # syscapu = GetUnitySysCap(UnityArr)
 
-    GetUnityFSInfo(UnityArr)
-       
-    sysinfo['Basic'] = GetUnityBasic(UnityArr)
-    sysinfo['Network'] = GetUnityPorts(UnityArr)
-    sysinfo['Pools'] = GetUnityPools(UnityArr)
-    sysinfo['Software'] = GetUnitySWInfo(UnityArr)
-    sysinfo['SN'] = GetUnitySNInfo(UnityArr)
-    sysinfo['Capacity Info'] = GetUnitySysCap(UnityArr)
-    sysinfo['Filesystem'] = GetUnityFSInfo(UnityArr)
+    unitybox = unity.UnitySystem(SysArr)
+  
+    sysinfo['Basic'] = unitybox.GetUnityBasic()
+    sysinfo['Network'] = unitybox.GetUnityPorts()
+    sysinfo['Pools'] = unitybox.GetUnityPools()
+    sysinfo['Software'] = unitybox.GetUnitySWInfo()
+    sysinfo['SN'] = unitybox.GetUnitySNInfo()
+    sysinfo['Capacity Info'] = unitybox.GetUnitySysCap()
+    sysinfo['Filesystem'] = unitybox.GetUnityFSInfo()
     
     #print(len(sysinfo['Filesystem']))
 
@@ -104,16 +100,17 @@ def UnityCon(UnityArr, workbook):
     worksheet.write("A8", 'Total (TB)', subtitle_format)
     worksheet.write("A9", 'Used (TB)', subtitle_format)
     worksheet.write("A10",'Free (TB)', subtitle_format)
-    worksheet.write("A12", 'Filesystem', title_format)
+    worksheet.write("A12", 'Filesystems', title_format)
     worksheet.write("A13", "FS Name", subtitle_format)
     worksheet.write("B13", "Pool", subtitle_format2)
     worksheet.write("C13", "NAS Server", subtitle_format2)
     worksheet.write("D13", "Shares", subtitle_format2)
-    worksheet.write("E13", "FS Type", subtitle_format2)
-    worksheet.write("F13", "Used (TB)", subtitle_format2)
-    worksheet.write("G13", "Total (TB)", subtitle_format2)
-    worksheet.write("H13", "Allocated (TB)", subtitle_format2)
-    worksheet.write("I13", "Total Allocated (TB)", subtitle_format2)
+    worksheet.write("E13", "Exports", subtitle_format2)
+    worksheet.write("F13", "FS Type", subtitle_format2)
+    worksheet.write("G13", "Used (TB)", subtitle_format2)
+    worksheet.write("H13", "Total (TB)", subtitle_format2)
+    worksheet.write("I13", "Allocated (TB)", subtitle_format2)
+    worksheet.write("J13", "Total Allocated (TB)", subtitle_format2)
     worksheet.write("D2", 'Pool Name', subtitle_format2)
     worksheet.write("E2", 'All Flash', subtitle_format2)
     worksheet.write("F2", 'Used (TB)', subtitle_format2)
@@ -136,22 +133,28 @@ def UnityCon(UnityArr, workbook):
     else:
         worksheet.write("B6", "N/A", data_format)
     
-    poolrow = 3
-    for pool in sysinfo['Pools']:
-        poolname = pool['name']
-        poolfreesize = pool['sizeFree']
-        poolusedsize = pool['sizeUsed']
-        pooltotalsize = pool['sizeTotal']
-        poolisaf = pool['isAllFlash']
-        poolpctfree = pool['Percent Free']
+    if poollen > 0:
+        poolrow = 3
+        for pool in sysinfo['Pools']:
+            poolname = pool['name']
+            poolfreesize = pool['sizeFree']
+            poolusedsize = pool['sizeUsed']
+            pooltotalsize = pool['sizeTotal']
+            poolisaf = pool['isAllFlash']
+            poolpctfree = pool['Percent Free']
+            poolrowstr = str(poolrow)
+            worksheet.write("D" + poolrowstr, poolname, data_format)
+            worksheet.write("E" + poolrowstr, poolisaf, data_format)
+            worksheet.write("F" + poolrowstr, poolusedsize, data_format)
+            worksheet.write("G" + poolrowstr, poolfreesize, data_format)
+            worksheet.write("H" + poolrowstr, pooltotalsize, data_format)
+            worksheet.write("I" + poolrowstr, poolpctfree, data_format)
+            poolrow = poolrow + 1
+    else:
         poolrowstr = str(poolrow)
+        poolname = "No Pool Information"
         worksheet.write("D" + poolrowstr, poolname, data_format)
-        worksheet.write("E" + poolrowstr, poolisaf, data_format)
-        worksheet.write("F" + poolrowstr, poolusedsize, data_format)
-        worksheet.write("G" + poolrowstr, poolfreesize, data_format)
-        worksheet.write("H" + poolrowstr, pooltotalsize, data_format)
-        worksheet.write("I" + poolrowstr, poolpctfree, data_format)
-        poolrow = poolrow + 1
+        
     
     fsrow = 14
     fsrowstr = str(fsrow)
@@ -167,148 +170,61 @@ def UnityCon(UnityArr, workbook):
         worksheet.write("A" + fsrowstr, fsname, data_format2)
         worksheet.write("B" + fsrowstr, fspool, data_format)
         worksheet.write("C" + fsrowstr, nasserver, data_format)
-        worksheet.write("E" + fsrowstr, fstype, data_format)
-        worksheet.write("F" + fsrowstr, fsused, data_format)
-        worksheet.write("G" + fsrowstr, fstotal, data_format)
-        worksheet.write("H" + fsrowstr, fsallocated, data_format)
-        worksheet.write("I" + fsrowstr, fstotalallocated, data_format)
+        worksheet.write("F" + fsrowstr, fstype, data_format)
+        worksheet.write("G" + fsrowstr, fsused, data_format)
+        worksheet.write("H" + fsrowstr, fstotal, data_format)
+        worksheet.write("I" + fsrowstr, fsallocated, data_format)
+        worksheet.write("J" + fsrowstr, fstotalallocated, data_format)
         if 'cifsShare' in fs.keys():
             for share in fs['cifsShare']:
+                cifsrow = fsrow
+                cifsrowstr = str(cifsrow)
                 sharename = share['name']
                 worksheet.write("D" + fsrowstr, sharename, data_format)
-                fsrow = fsrow + 1
-                fsrowstr = str(fsrow)
-        else:
-            worksheet.write("D" + fsrowstr, "N/A", data_format)
-            fsrow = fsrow + 1
-            fsrowstr = str(fsrow)
+                exports = share['exportPaths']
+                if len(exports) > 1:
+                    for export in exports:
+                        worksheet.write("E" + cifsrowstr, export, data_format)
+                        cifsrow = cifsrow + 1    
+                        cifsrowstr = str(cifsrow)           
+                if cifsrow > fsrow:
+                    fsrow = cifsrow
+                    fsrowstr = str(fsrow)
+                else:
+                    fsrow = fsrow + 1
+                    fsrowstr = str(fsrow)
 
-        #print(nasserver, fsname, fspool, fsallocated, fstotalallocated,fstotal,fsused, fstype)
-    
+        if 'nfsShare' in fs.keys():
+            for nfs in fs['nfsShare']:
+                nfsrow = fsrow
+                nfsrowstr = str(nfsrow)
+                nfssharename = nfs['name']
+                worksheet.write("D" + fsrowstr, nfssharename, data_format)
+                nfsexports = nfs['exportPaths']
+                if len(nfsexports) > 1:
+                    for nfsexport in nfsexports:
+                        worksheet.write("E" + nfsrowstr, nfsexport, data_format)
+                        nfsrow = nfsrow + 1    
+                        nfsrowstr = str(nfsrow)
+                else:
+                    for nfsexport in nfsexports:
+                        worksheet.write("E" + fsrowstr, nfsexport, data_format)      
+                
+                if nfsrow > fsrow:
+                    fsrow = nfsrow
+                    fsrowstr = str(fsrow)
+                else:
+                    fsrow = fsrow + 1
+                    fsrowstr = str(fsrow)
+            
     return
 
-def GetUnityBasic(UnityArr):
-
-    basicinfo = session.get('https://' + UnityArr + '/api/types/basicSystemInfo/instances?fields=name,model,softwareVersion&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    basicjson = basicinfo.json()
-    basiclst = []
-    for info in basicjson['entries']:
-        basiclst.append(info['content'])
-
-    return basiclst
-
-def GetUnityPorts(UnityArr):
-
-    portinfo = session.get('https://' + UnityArr + '/api/types/ipPort/instances?fields=name,macAddress,isLinkUp&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    portjson = portinfo.json()
-    portlst = []
-    for port in portjson['entries']:
-        portlst.append(port['content'])
-    
-    return portlst
-
-    
-def GetUnityPools(UnityArr):
-    
-    poolinfo = session.get('https://' + UnityArr + '/api/types/pool/instances?fields=name,type,isAllFlash,health,sizeTotal,sizeUsed,sizeFree,dataReductionRatio&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    pooljson = poolinfo.json()
-    poollst = []
-    for pool in pooljson['entries']:
-        poollst.append(pool['content'])
-
-    for pooldic in poollst:
-        for key, value in pooldic.items():
-            if key == "sizeTotal":
-                totalsizeTB = round(value/1099511627776, 2)
-                pooldic[key] = totalsizeTB
-            if key == "sizeUsed":
-                usedsizeTB = round(value/1099511627776, 2)
-                pooldic[key] = usedsizeTB
-            if key == "sizeFree":
-                freesizeTB = round(value/1099511627776, 2)
-                pooldic[key] = freesizeTB
-        pooldic['Percent Free'] = round((freesizeTB/totalsizeTB) * 100, 2)
-
-    return poollst
-
-def GetUnitySWInfo(UnityArr):
-    
-    swinfo = session.get('https://' + UnityArr + '/api/types/installedSoftwareVersion/instances?fields=version,revision&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    swjson = swinfo.json()
-    swinfolst =[]
-    for sw in swjson['entries']:
-        swinfolst.append(sw['content'])
-
-    return swinfolst
-
-def GetUnitySNInfo(UnityArr):
-
-    sninfo = session.get('https://' + UnityArr + '/api/types/system/instances?fields=serialNumber&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    snjson = sninfo.json()
-    sninfolst = []
-    for sn in snjson['entries']:
-        sninfolst.append(sn['content'])
-
-    return sninfolst
-
-def GetUnitySysCap(UnityArr):
-
-    syscapinfo = session.get('https://' + UnityArr + '/api/types/systemCapacity/instances?fields=sizeTotal,sizeUsed,sizeFree,dataReductionRatio,overallEfficiencyRatio&compact=true', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    syscapjson = syscapinfo.json()
-    syscaplst = []
-    for sys in syscapjson['entries']:
-        syscaplst.append(sys['content'])
-
-    for syscapdic in syscaplst:
-        for key, value in syscapdic.items():
-            if key == "sizeTotal":
-                totalsizeTB = round(value/1099511627776, 2)
-                syscapdic[key] = totalsizeTB
-            if key == "sizeUsed":
-                usedsizeTB = round(value/1099511627776, 2)
-                syscapdic[key] = usedsizeTB
-            if key == "sizeFree":
-                freesizeTB = round(value/1099511627776, 2)
-                syscapdic[key] = freesizeTB
-            
-    return syscaplst
-
-def GetUnityFSInfo(UnityArr):
-    fsinfo = session.get('https://' + UnityArr + '/api/types/filesystem/instances?fields=name,type,supportedProtocols,sizeAllocated,sizeAllocatedTotal,sizeTotal,sizeUsed,dataReductionRatio,storageResource.name,pool.name,nasServer.name,cifsShare.name,cifsShare.exportPaths', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
-    fsinfojson = fsinfo.json()
-    fsinfolst = []
-
-    for fs in fsinfojson['entries']:
-        fsinfolst.append(fs['content'])
-
-    for fsinfodic in fsinfolst:
-        for key, value in fsinfodic.items():
-            if key == "sizeTotal":
-                totalsizeTB = round(value/1099511627776, 2)
-                fsinfodic[key] = totalsizeTB
-            if key == "sizeUsed":
-                usedsizeTB = round(value/1099511627776, 2)
-                fsinfodic[key] = usedsizeTB
-            if key == "sizeAllocated":
-                sizeAllocatedTB = round(value/1099511627776, 2)
-                fsinfodic[key] = sizeAllocatedTB
-            if key == "sizeAllocatedTotal":
-                sizeAllocatedTotalTB = round(value/1099511627776, 2)
-                fsinfodic[key] = sizeAllocatedTotalTB
-            if key == "type":
-                if value == 1:
-                    newvalue = "FileSystem"
-                    fsinfodic[key] = newvalue
-                if value == 2:
-                    newvalue = "VMWare NFS"
-                    fsinfodic[key] = newvalue
-
-    return fsinfolst
+vnx = VNXSystem('10.237.196.160', 'sysadmin', 'sysadmin')
 
 unityip = ["10.237.196.48", "10.237.196.198"]
 workbook = xlsxwriter.Workbook("ConfigBook.xlsx")
 for ip in unityip:
     
-    UnityCon(ip, workbook)
+    SystemCon(ip, workbook)
 
 workbook.close()
