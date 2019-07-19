@@ -3,6 +3,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import json
 import creds
 import xlsxwriter
+from capconverter import convert
 # import pandas as pd
 
 session = requests.Session()
@@ -59,13 +60,13 @@ class UnitySystem:
             for pooldic in poollst:
                 for key, value in pooldic.items():
                     if key == "sizeTotal":
-                        totalsizeTB = round(value/1099511627776, 2)
+                        totalsizeTB = convert.bytestoTB(value)
                         pooldic[key] = totalsizeTB
                     if key == "sizeUsed":
-                        usedsizeTB = round(value/1099511627776, 2)
+                        usedsizeTB = convert.bytestoTB(value)
                         pooldic[key] = usedsizeTB
                     if key == "sizeFree":
-                        freesizeTB = round(value/1099511627776, 2)
+                        freesizeTB = convert.bytestoTB(value)
                         pooldic[key] = freesizeTB
                 pooldic['Percent Free'] = round((freesizeTB/totalsizeTB) * 100, 2)
 
@@ -111,13 +112,13 @@ class UnitySystem:
             for syscapdic in syscaplst:
                 for key, value in syscapdic.items():
                     if key == "sizeTotal":
-                        totalsizeTB = round(value/1099511627776, 2)
+                        totalsizeTB = convert.bytestoTB(value)
                         syscapdic[key] = totalsizeTB
                     if key == "sizeUsed":
-                        usedsizeTB = round(value/1099511627776, 2)
+                        usedsizeTB = convert.bytestoTB(value)
                         syscapdic[key] = usedsizeTB
                     if key == "sizeFree":
-                        freesizeTB = round(value/1099511627776, 2)
+                        freesizeTB = convert.bytestoTB(value)
                         syscapdic[key] = freesizeTB
                 
         return syscaplst
@@ -137,16 +138,16 @@ class UnitySystem:
             for fsinfodic in fsinfolst:
                 for key, value in fsinfodic.items():
                     if key == "sizeTotal":
-                        totalsizeTB = round(value/1099511627776, 2)
+                        totalsizeTB = convert.bytestoTB(value)
                         fsinfodic[key] = totalsizeTB
                     if key == "sizeUsed":
-                        usedsizeTB = round(value/1099511627776, 2)
+                        usedsizeTB = convert.bytestoTB(value)
                         fsinfodic[key] = usedsizeTB
                     if key == "sizeAllocated":
-                        sizeAllocatedTB = round(value/1099511627776, 2)
+                        sizeAllocatedTB = convert.bytestoTB(value)
                         fsinfodic[key] = sizeAllocatedTB
                     if key == "sizeAllocatedTotal":
-                        sizeAllocatedTotalTB = round(value/1099511627776, 2)
+                        sizeAllocatedTotalTB = convert.bytestoTB(value)
                         fsinfodic[key] = sizeAllocatedTotalTB
                     if key == "type":
                         if value == 1:
@@ -174,16 +175,10 @@ class UnitySystem:
         sysinfo['Capacity Info'] = unitybox.GetUnitySysCap()
         sysinfo['Filesystem'] = unitybox.GetUnityFSInfo()
         
-        #print(len(sysinfo['Filesystem']))
-
-        #sysinfo_json = json.dumps(sysinfo, indent=4)
-
         basiclen = len(sysinfo['Basic'])
         snlen = len(sysinfo['SN'])
         caplen = len(sysinfo['Capacity Info'])
         poollen = len(sysinfo['Pools'])
-
-        #for pool in sysinfo['Pools']:
 
         if caplen == 1:
             for cap in sysinfo['Capacity Info']:
@@ -235,7 +230,7 @@ class UnitySystem:
         subtitle_format2.set_align('center')
         subtitle_format.set_font_size(11)
         
-        worksheet =  self.workbook.add_worksheet(sysname)
+        worksheet =  self.workbook.add_worksheet("Unity - " + sysname)
 
         worksheet.write("A1", 'System Name', title_format)
         worksheet.write("A2", 'System SN', title_format)
