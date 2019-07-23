@@ -12,30 +12,82 @@ isisession.auth = ('root', 'MRD3nver!')
 
 class IsilonSystem:
 
+    def IsilonGetAZ(self):
+
+        isiazinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/3/zones', verify=False)
+
+        isiazlst = []
+
+        if isiazinfo.status_code == 200:
+
+            isiazinfo = isiazinfo.json()
+
+            for az in isiazinfo['zones']:
+
+                isiazlst.append(az)
+
+        return isiazlst
+    
     def __init__(self, IsilonArr, workbook=None):
         self.IsilonArr = IsilonArr
         self.workbook = workbook
 
+    def IsilonGetLicenseInfo(self):
+
+        isilicinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/1/license/licenses', verify=False)
+
+        if isilicinfo.status_code == 200:
+
+            isilicinfo = isilicinfo.json()
+
+            isiliclst = []
+
+            for licinfo in isilicinfo['licenses']:
+
+                isiliclst.append(licinfo)
+        
+        return isiliclst
+
+    def IsilonCloudPools(self):
+
+        isicpinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/3.1/cloud/pools', verify=False)
+
+        isicpinfolst = []
+
+        if isicpinfo.status_code == 200:
+            isicpinfo = isicpinfo.json()
+            
+            if isicpinfo['total'] > 0:
+                
+                for cpinfo in isicpinfo['pools']:
+                    isicpinfolst.append(cpinfo)
+        
+        return isicpinfolst
+    
     def IsilonGetNFS(self):
 
-        isinfsshareinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/4/protocols/nfs/exports', verify=False)
+        isizoneinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/3/zones', verify=False).json()
+        
+        nfsexportlst = []
 
-        if isinfsshareinfo.status_code == 200:
-            nfsexportlst = []
-            isinfsshareinfo = isinfsshareinfo.json()
+        for zone in isizoneinfo['zones']:
+            zonename = zone['name']
+                    
+            isinfsshareinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/4/protocols/nfs/exports?zone=' + zonename, verify=False)
+                        
+            if isinfsshareinfo.status_code == 200:
+                
+                isinfsshareinfo = isinfsshareinfo.json()
 
-            if isinfsshareinfo['total'] > 0:
-
-                for exports in isinfsshareinfo['exports']:
-                    nfsexportlst.append(exports)
-        else:
-            nfsexportlst = []
+                if isinfsshareinfo['total'] > 0:
+                    
+                    for exports in isinfsshareinfo['exports']:
+                        nfsexportlst.append(exports)
 
         return nfsexportlst
     
     def IsilonGetSMB(self):
-
-       
+               
         isizoneinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/3/zones', verify=False).json()
         
         isismblst = []
@@ -57,10 +109,18 @@ class IsilonSystem:
         isipoolsinfo = isisession.get('https://' + self.IsilonArr + ':8080/platform/3/storagepool/storagepools', verify=False).json()
         
         isipoollst = []
+
+        totalpoolused = 0
+        totalpoolfree = 0
+        totalpoolavail = 0
+        totalpool = 0
         
         for pool in isipoolsinfo['storagepools']:
+            print(type(pool['usage']['used_bytes']))
+
             isipoollst.append(pool)
         
+
         return isipoollst
 
     def IsilonID(self):
@@ -132,9 +192,9 @@ class IsilonSystem:
         isilonboxpools = isilonbox.IsilonGetPools()
         isilonboxsmb = isilonbox.IsilonGetSMB()
         isilonboxnfs = isilonbox.IsilonGetNFS()
-
-        for smb in isilonboxsmb:
-            print(smb['name'] + " " + smb['zone'])
+        isilonboxcp = isilonbox.IsilonCloudPools()
+        isilonboxlic = isilonbox.IsilonGetLicenseInfo()
+        isilonboxaz = isilonbox.IsilonGetAZ()
 
         title_format = self.workbook.add_format()
         title_format.set_bold()
@@ -205,6 +265,31 @@ class IsilonSystem:
         worksheet.write("C" + noderowstr, "Total HDD Capacity (TB)", subtitle_format2)
         worksheet.write("D" + noderowstr, hddtotalcap, data_format)
 
+        licrow = noderow + 2
+        licrowstr = str(licrow)
+        if len(isilonboxlic) > 0:
+
+            worksheet.merge_range("C" + licrowstr + ":E" + licrowstr, "Licenses", title_format2)    
+            licrow += 1
+            licrowstr = str(licrow)
+            worksheet.write("C" + licrowstr, "Name", subtitle_format2)
+            worksheet.write("D" + licrowstr, "Status", subtitle_format2)
+            worksheet.write("E" + licrowstr, "Duration", subtitle_format2)
+            licrow += 1
+                        
+            for lic in isilonboxlic:
+
+                licrowstr = str(licrow)
+                licinfoname = lic['name']
+                licinfostatus = lic['status']
+                licinfodur = str(lic['duration'])
+
+                worksheet.write("C" + licrowstr, licinfoname, data_format)
+                worksheet.write("D" + licrowstr, licinfostatus, data_format)
+                worksheet.write("E" + licrowstr, licinfodur, data_format)
+
+                licrow += 1
+                
         smbrow = 1
         smbrowstr = str(smbrow)
         if len(isilonboxsmb) > 0:
@@ -224,10 +309,10 @@ class IsilonSystem:
                 isismbpath = share['path']
                 isismbdesc = share['description']
                 isismbzone = share['zone']
-                exportworksheet.write("C" + smbrowstr, isismbname, data_format)
-                exportworksheet.write("D" + smbrowstr, isismbpath, data_format)
-                exportworksheet.write("E" + smbrowstr, isismbdesc, data_format)
-                exportworksheet.write("F" + smbrowstr, isismbzone, data_format)
+                exportworksheet.write("B" + smbrowstr, isismbname, data_format)
+                exportworksheet.write("C" + smbrowstr, isismbpath, data_format)
+                exportworksheet.write("D" + smbrowstr, isismbdesc, data_format)
+                exportworksheet.write("E" + smbrowstr, isismbzone, data_format)
                 smbrow += 1
 
         nfsrow = 1
@@ -249,10 +334,10 @@ class IsilonSystem:
                 isiexportpaths = str(export['paths']).strip('[]')
                 isiexportzone = export['zone']
                 isiexportdesc = export['description']
-                exportworksheet.write("H" + nfsrowstr, isiexportid, data_format)
-                exportworksheet.write("I" + nfsrowstr, isiexportpaths, data_format)
-                exportworksheet.write("J" + nfsrowstr, isiexportdesc, data_format)
-                exportworksheet.write("K" + nfsrowstr, isiexportzone, data_format)
+                exportworksheet.write("G" + nfsrowstr, isiexportid, data_format)
+                exportworksheet.write("H" + nfsrowstr, isiexportpaths, data_format)
+                exportworksheet.write("I" + nfsrowstr, isiexportdesc, data_format)
+                exportworksheet.write("J" + nfsrowstr, isiexportzone, data_format)
                 nfsrow += 1
         
         poolrow = 3
@@ -279,8 +364,53 @@ class IsilonSystem:
             worksheet.write("N" + poolrowstr, isipoolavailint, data_format)
             worksheet.write("O" + poolrowstr, isipooltotalint, data_format)
             poolrow += 1
-                
+
+        cprow = poolrow + 1
+        cprowstr = str(cprow)
+        if len(isilonboxcp) > 0:
+
+            worksheet.merge_range("H" + cprowstr + ":K" + cprowstr, "Cloud Pools", title_format2)
+            cprow += 1
+            cprowstr = str(cprow)
+            worksheet.write("H" + cprowstr, "Name", subtitle_format2)
+            worksheet.write("I" + cprowstr, "Description", subtitle_format2)
+            worksheet.write("J" + cprowstr, "State", subtitle_format2)
+            worksheet.write("K" + cprowstr, "Type", subtitle_format2)
+            cprow += 1
+
+            for cp in isilonboxcp:
+                cprowstr = str(cprow)
+                cpname = cp['name']
+                cpdesc = cp['description']
+                cpstate = cp['state']
+                cptype = cp['type']
+                worksheet.write("H" + cprowstr, cpname, data_format)
+                worksheet.write("I" + cprowstr, cpdesc, data_format)
+                worksheet.write("J" + cprowstr, cpstate, data_format)
+                worksheet.write("K" + cprowstr, cptype, data_format)
+                cprow += 1
         
+        azrow = poolrow + 1
+        azrowstr = str(azrow)
 
+        if len(isilonboxaz) > 0:
 
-                   
+            worksheet.merge_range("M" + azrowstr + ":N" + azrowstr, "Access Zones", title_format2)
+            azrow += 1
+            azrowstr = str(azrow)
+
+            worksheet.write("M" + azrowstr, "Name", subtitle_format2)
+            worksheet.write("N" + azrowstr, "Path", subtitle_format2)
+
+            azrow += 1
+
+            for az in isilonboxaz:
+                
+                azrowstr = str(azrow)
+                azname = az['name']
+                azpath = az['path']
+                worksheet.write("M" + azrowstr, azname, data_format)  
+                worksheet.write("N" + azrowstr, azpath, data_format) 
+
+                azrow += 1         
+        
