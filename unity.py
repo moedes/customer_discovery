@@ -296,8 +296,7 @@ class UnitySystem:
             poolrowstr = str(poolrow)
             poolname = "No Pool Information"
             worksheet.write("D" + poolrowstr, poolname, data_format)
-            
-        
+                    
         fsrow = 14
         fsrowstr = str(fsrow)
         for fs in sysinfo['Filesystem']:
