@@ -1,4 +1,4 @@
 creds.py
 creds*
 ConfigBook.xlsx
-__pycache__/
+*.pyc

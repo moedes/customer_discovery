@@ -160,6 +160,14 @@ class UnitySystem:
             fsinfolst = []
 
         return fsinfolst
+
+    def UnityHosts(self):
+
+        hostsinfo = session.get('https://' + self.UnityArr + '/api/types/host/instances?fields=name,type,description,osType,registrationType,hostIPPorts.name,hostIPPorts.address,health', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
+        
+        print(json.dumps(hostsinfo.json(), indent=4))
+
+        return
     
     def UnitySystemCon(self):
 
@@ -174,6 +182,8 @@ class UnitySystem:
         sysinfo['SN'] = unitybox.GetUnitySNInfo()
         sysinfo['Capacity Info'] = unitybox.GetUnitySysCap()
         sysinfo['Filesystem'] = unitybox.GetUnityFSInfo()
+
+        unityhostinfo = unitybox.UnityHosts()
         
         basiclen = len(sysinfo['Basic'])
         snlen = len(sysinfo['SN'])
