@@ -116,10 +116,9 @@ class IsilonSystem:
         totalpool = 0
         
         for pool in isipoolsinfo['storagepools']:
-            print(type(pool['usage']['used_bytes']))
-
             isipoollst.append(pool)
-        
+            
+        print(json.dumps(isipoollst, indent=2)
 
         return isipoollst
 
@@ -190,6 +189,8 @@ class IsilonSystem:
         sysname = isilonbox.IsilonID()
         isilonboxnodes = isilonbox.IsilonGetNodes()
         isilonboxpools = isilonbox.IsilonGetPools()
+
+        print(json.dumps(isilonboxpools, indent=4))
         isilonboxsmb = isilonbox.IsilonGetSMB()
         isilonboxnfs = isilonbox.IsilonGetNFS()
         isilonboxcp = isilonbox.IsilonCloudPools()

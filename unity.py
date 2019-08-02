@@ -127,11 +127,12 @@ class UnitySystem:
         
         fsinfo = session.get('https://' + self.UnityArr + '/api/types/filesystem/instances?fields=name,type,supportedProtocols,sizeAllocated,sizeAllocatedTotal,sizeTotal,sizeUsed,dataReductionRatio,storageResource.name,pool.name,nasServer.name,cifsShare.name,cifsShare.exportPaths,nfsShare.name,nfsShare.exportPaths', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
         
+        fsinfolst = []
+        
         if fsinfo.status_code == 200:
             
             fsinfojson = fsinfo.json()
-            fsinfolst = []
-
+            
             for fs in fsinfojson['entries']:
                 fsinfolst.append(fs['content'])
 
@@ -156,18 +157,24 @@ class UnitySystem:
                         if value == 2:
                             newvalue = "VMWare NFS"
                             fsinfodic[key] = newvalue
-        else:
-            fsinfolst = []
-
+        
         return fsinfolst
 
-    def UnityHosts(self):
+    def GetUnityHosts(self):
 
         hostsinfo = session.get('https://' + self.UnityArr + '/api/types/host/instances?fields=name,type,description,osType,registrationType,hostIPPorts.name,hostIPPorts.address,health', headers={"X-EMC-REST-CLIENT":"true"}, verify=False)
         
-        print(json.dumps(hostsinfo.json(), indent=4))
+        hostinfolst = []
 
-        return
+        if hostsinfo.status_code == 200:
+
+            hostsjson = hostsinfo.json()
+            
+            for host in hostsjson['entries']:
+
+                hostinfolst.append(host['content']) 
+        
+        return hostinfolst
     
     def UnitySystemCon(self):
 
@@ -182,9 +189,8 @@ class UnitySystem:
         sysinfo['SN'] = unitybox.GetUnitySNInfo()
         sysinfo['Capacity Info'] = unitybox.GetUnitySysCap()
         sysinfo['Filesystem'] = unitybox.GetUnityFSInfo()
+        sysinfo['Hosts'] = unitybox.GetUnityHosts()
 
-        unityhostinfo = unitybox.UnityHosts()
-        
         basiclen = len(sysinfo['Basic'])
         snlen = len(sysinfo['SN'])
         caplen = len(sysinfo['Capacity Info'])
@@ -216,10 +222,6 @@ class UnitySystem:
         else:
             print('Serial Number information is greate than 1')
         
-
-        # for net in sysinfo['Network']:
-        #     for value in net.values():
-        #         print(value)
         
         title_format = self.workbook.add_format()
         title_format.set_bold()
