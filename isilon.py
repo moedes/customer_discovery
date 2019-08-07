@@ -118,7 +118,7 @@ class IsilonSystem:
         for pool in isipoolsinfo['storagepools']:
             isipoollst.append(pool)
             
-        print(json.dumps(isipoollst, indent=2)
+        print(json.dumps(isipoollst, indent=2))
 
         return isipoollst
 
@@ -347,7 +347,10 @@ class IsilonSystem:
             isipoolname = pool['name']
             isipoollnn = str(pool['lnns']).strip('[]')
             isipooltype = pool['type']
-            isipoolprotect = pool['protection_policy']
+            if isipooltype == 'nodepool':
+                isipoolprotect = pool['protection_policy']
+            else:
+                isipoolprotect = 'N/A'                    
             isipoolusedt = pool['usage']['used_bytes']
             isipoolusedtint = convert.bytestoTB(int(isipoolusedt))
             isipoolfreet = pool['usage']['free_bytes']
@@ -358,8 +361,8 @@ class IsilonSystem:
             isipoolavailint = convert.bytestoTB(int(isipoolavail))
             worksheet.write("H" + poolrowstr, isipoolname, data_format)
             worksheet.write("I" + poolrowstr, isipooltype, data_format)
-            worksheet.write("J" + poolrowstr, isipoolprotect, data_format)
             worksheet.write("K" + poolrowstr, isipoollnn, data_format)
+            worksheet.write("J" + poolrowstr, isipoolprotect, data_format)
             worksheet.write("L" + poolrowstr, isipoolusedtint, data_format)
             worksheet.write("M" + poolrowstr, isipoolfreetint, data_format)
             worksheet.write("N" + poolrowstr, isipoolavailint, data_format)
